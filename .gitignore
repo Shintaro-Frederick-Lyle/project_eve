@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.env
+env/
+eve_env/
+venv/
+
+# 巨大なデータ・ログファイル（サンプル画像以外は弾く）
+*.csv
+*.log
+simulation_log.txt
+data/
+logs/
+!cooperation_transition.png
+
+# OS / Editor
+.DS_Store
+.vscode/

@@ -1,0 +1,25 @@
+# Project Eve: AST Meme Grammar (GBNF format)
+# Target: ICLR 2027 / SLPE Architecture
+
+# Root node must always start with an 'If' rule.
+root ::= rule
+
+# Core rule structure. Permits nesting via the 'Else' branch.
+rule ::= "If (" condition ") Then (" action ") Else (" branch ")"
+
+# A branch can either terminate with an action or nest another rule.
+branch ::= action | rule
+
+# Condition definitions allowing logical combinations.
+condition ::= atomic 
+            | "(" condition " AND " condition ")" 
+            | "(" condition " OR " condition ")" 
+            | "NOT (" condition ")"
+
+# Atomic conditions (memory access). 
+# For Paper 1, agents can only observe the immediate last action.
+atomic ::= "Opponent_Last_Action == " action 
+         | "My_Last_Action == " action
+
+# Permitted terminal actions in this environment (Cooperate or Defect).
+action ::= "Signal-Theta" | "Signal-Omega"
