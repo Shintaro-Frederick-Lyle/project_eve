@@ -3,12 +3,14 @@
 import os
 import csv
 import numpy as np
+import json
 
 class EveMetricsLogger:
-    def __init__(self, log_dir="logs"):
-        self.log_dir = log_dir
-        os.makedirs(self.log_dir, exist_ok=True)
-        self.csv_path = os.path.join(self.log_dir, "evolution_metrics.csv")
+    # 引数を log_dir から save_dir に変更し、マネージャーからの指示を受け取れるようにする
+    def __init__(self, save_dir="data"):
+        self.save_dir = save_dir
+        os.makedirs(self.save_dir, exist_ok=True)
+        self.csv_path = os.path.join(self.save_dir, "evolution_metrics.csv")
         
         # CSVのヘッダーを初期化
         with open(self.csv_path, 'w', newline='') as f:
@@ -32,3 +34,21 @@ class EveMetricsLogger:
         with open(self.csv_path, 'a', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([gen, f"{avg_payoff:.4f}", f"{coop_rate:.4f}", mutants_count, unique_memes])
+
+    def append_mutations(self, gen, new_memes_dict):
+        """
+        世代ごとに発生した新規ミームだけをJSONL形式で追記保存する。
+        JSONLは後からpandasなどで超高速に読み込めるため、ログ解析に最適。
+        """
+        path = os.path.join(self.logs_dir, "mutation_history.jsonl")
+        
+        # 'a' (append) モードで開いて、末尾に追記していく
+        with open(path, 'a', encoding='utf-8') as f:
+            for agent_id, meme_str in new_memes_dict.items():
+                record = {
+                    "generation": gen,
+                    "agent_id": int(agent_id),
+                    "meme": meme_str
+                }
+                # 1行のJSON文字列として書き込む
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
