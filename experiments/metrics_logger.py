@@ -4,6 +4,7 @@ import os
 import csv
 import numpy as np
 import json
+from collections import Counter
 
 class EveMetricsLogger:
     # 引数を log_dir から save_dir に変更し、マネージャーからの指示を受け取れるようにする
@@ -52,3 +53,28 @@ class EveMetricsLogger:
                 }
                 # 1行のJSON文字列として書き込む
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    def log_meme_distribution(self, gen, ast_grid):
+        """その世代における全ロジック（ミーム）の分布をCSVに記録する"""
+        csv_path = os.path.join(self.save_dir, "meme_distribution.csv")
+        
+        # 2次元のグリッド配列を1列のリストに平坦化してロジックを抽出
+        logics = ast_grid.flatten().tolist()
+        
+        # ロジックの出現回数をカウント
+        counts = Counter(logics)
+        
+        # 🌟引数を空にして most_common() を呼ぶと、"すべて"のロジックが件数順にソートされて抽出されます
+        all_logics = counts.most_common()
+        
+        # CSVに追記（初回のみヘッダーを作成）
+        file_exists = os.path.isfile(csv_path)
+        with open(csv_path, mode='a', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["Generation", "Rank", "Count", "Logic"])
+            
+            for rank, (logic, count) in enumerate(all_logics, start=1):
+                # 2体以上に増殖した（生き残った）ミームだけを記録
+                if count >= 2:
+                    writer.writerow([gen, rank, count, logic])

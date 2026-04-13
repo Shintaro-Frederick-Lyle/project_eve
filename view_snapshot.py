@@ -18,7 +18,7 @@ def save_all_snapshots(run_dir):
     print(f"🖼️  全 {len(snapshot_files)} 枚の画像を生成中...")
     
     # 共通のカラーマップ設定
-    cmap = ListedColormap(['#d62728', '#1f77b4']) # 赤:裏切り, 青:協力
+    cmap = ListedColormap(['#1f77b4', '#d62728']) # 赤:裏切り, 青:協力
 
     for file_path in snapshot_files:
         # ファイル名から世代番号を抽出 (例: actions_gen_0150.npy -> 0150)

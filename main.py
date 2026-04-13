@@ -199,7 +199,7 @@ class EveOrchestrator:
         # ----------------------------------------------------
 
 if __name__ == "__main__":
-    orchestrator = EveOrchestrator(grid_size=32, generations=250, mutation_rate=0.01)
+    orchestrator = EveOrchestrator(grid_size=64, generations=3000, mutation_rate=0.01)
     asyncio.run(orchestrator.run_evolution())
 
     # 🌟シミュレーション終了後に自動解析を実行
