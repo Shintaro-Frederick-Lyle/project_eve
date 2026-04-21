@@ -36,24 +36,6 @@ class EveMetricsLogger:
             writer = csv.writer(f)
             writer.writerow([gen, f"{avg_payoff:.4f}", f"{coop_rate:.4f}", mutants_count, unique_memes])
 
-    def append_mutations(self, gen, new_memes_dict):
-        """
-        世代ごとに発生した新規ミームだけをJSONL形式で追記保存する。
-        JSONLは後からpandasなどで超高速に読み込めるため、ログ解析に最適。
-        """
-        path = os.path.join(self.logs_dir, "mutation_history.jsonl")
-        
-        # 'a' (append) モードで開いて、末尾に追記していく
-        with open(path, 'a', encoding='utf-8') as f:
-            for agent_id, meme_str in new_memes_dict.items():
-                record = {
-                    "generation": gen,
-                    "agent_id": int(agent_id),
-                    "meme": meme_str
-                }
-                # 1行のJSON文字列として書き込む
-                f.write(json.dumps(record, ensure_ascii=False) + "\n")
-
     def log_meme_distribution(self, gen, ast_grid):
         """その世代における全ロジック（ミーム）の分布をCSVに記録する"""
         csv_path = os.path.join(self.save_dir, "meme_distribution.csv")
