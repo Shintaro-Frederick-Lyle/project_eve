@@ -29,7 +29,7 @@ class EveRunManager:
         print(f"📁 [EveRunManager] 実験ディレクトリを作成しました: {self.run_dir}")
         self.backup_source_code()
 
-    def append_mutations(self, gen, actions, payoffs, ast_grid, mutants_count, new_memes_dict, unique_asts_count=0, avg_ast_len=0.0):
+    def append_mutations(self, gen, new_memes_dict):
         """世代ごとに発生した新規ミームと思考ログをJSONL形式で追記保存する"""
         path = os.path.join(self.logs_dir, "mutation_history.jsonl")
         
@@ -39,9 +39,7 @@ class EveRunManager:
                     "generation": gen,
                     "agent_id": int(agent_id),
                     "meme": data["ast"],         
-                    "reasoning": data["reasoning"] ,
-                    "unique_asts_count": unique_asts_count, 
-                    "avg_ast_len": avg_ast_len              
+                    "reasoning": data["reasoning"]
                 }
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
 

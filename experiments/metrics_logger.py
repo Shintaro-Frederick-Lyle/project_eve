@@ -7,56 +7,40 @@ import json
 from collections import Counter
 
 class EveMetricsLogger:
-    # 引数を log_dir から save_dir に変更し、マネージャーからの指示を受け取れるようにする
     def __init__(self, save_dir="data"):
         self.save_dir = save_dir
         os.makedirs(self.save_dir, exist_ok=True)
         self.csv_path = os.path.join(self.save_dir, "evolution_metrics.csv")
         
-        # CSVのヘッダーを初期化
+        # 🌟 ヘッダーに Avg_AST_Blocks を追加
         with open(self.csv_path, 'w', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(["Generation", "Avg_Payoff", "Cooperation_Rate", "Mutants_Count", "Unique_Memes"])
+            writer.writerow(["Generation", "Avg_Payoff", "Cooperation_Rate", "Mutants_Count", "Unique_Memes", "Avg_AST_Blocks"])
 
-    def log_generation(self, gen, actions, payoffs, ast_grid, mutants_count):
-        # JAXの配列をNumpyに変換して計算
+    # 🌟 simulator.py が送ってくるすべての引数を受け取れるように修正
+    def log_generation(self, gen, actions, payoffs, ast_grid, mutants_count, new_memes_dict=None, unique_asts_count=0, avg_ast_len=0.0):
         actions_np = np.array(actions)
         payoffs_np = np.array(payoffs)
         
         avg_payoff = float(np.mean(payoffs_np))
-        
-        # 協力率（0=Theta/協力, 1=Omega/裏切り と仮定した場合の計算）
         coop_rate = 1.0 - float(np.mean(actions_np))
         
-        # 社会に存在するユニークなミーム（AST）の種類数をカウント
-        unique_memes = len(np.unique(ast_grid))
-        
-        # CSVに行を追加
+        # 🌟 新しいメトリクスもCSVに書き込む
         with open(self.csv_path, 'a', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow([gen, f"{avg_payoff:.4f}", f"{coop_rate:.4f}", mutants_count, unique_memes])
+            writer.writerow([gen, f"{avg_payoff:.4f}", f"{coop_rate:.4f}", mutants_count, unique_asts_count, f"{avg_ast_len:.1f}"])
 
     def log_meme_distribution(self, gen, ast_grid):
-        """その世代における全ロジック（ミーム）の分布をCSVに記録する"""
         csv_path = os.path.join(self.save_dir, "meme_distribution.csv")
-        
-        # 2次元のグリッド配列を1列のリストに平坦化してロジックを抽出
         logics = ast_grid.flatten().tolist()
-        
-        # ロジックの出現回数をカウント
         counts = Counter(logics)
-        
-        # 🌟引数を空にして most_common() を呼ぶと、"すべて"のロジックが件数順にソートされて抽出されます
         all_logics = counts.most_common()
         
-        # CSVに追記（初回のみヘッダーを作成）
         file_exists = os.path.isfile(csv_path)
         with open(csv_path, mode='a', encoding='utf-8', newline='') as f:
             writer = csv.writer(f)
             if not file_exists:
                 writer.writerow(["Generation", "Rank", "Count", "Logic"])
-            
             for rank, (logic, count) in enumerate(all_logics, start=1):
-                # 2体以上に増殖した（生き残った）ミームだけを記録
                 if count >= 2:
                     writer.writerow([gen, rank, count, logic])
