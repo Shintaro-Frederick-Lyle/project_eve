@@ -13,7 +13,7 @@ from router.llm_gateway import HeterogeneousGateway
 from experiments.run_manager import EveRunManager
 from env.grid_jax import SpatialPDEnv
 from cognition.ast_parser import MemeCompiler
-from experiments.logger import EveMetricsLogger
+from experiments.metrics_logger import EveMetricsLogger
 
 class EveSimulator:
     def __init__(self, config):
@@ -119,12 +119,13 @@ class EveSimulator:
             new_actions, do_mutate = self.env.update_actions_fermi(
                 current_actions, 
                 payoffs, 
-                ast_costs=ast_costs_jax,         # 🌟 ASTのブロック数を渡す
                 key=subkey, 
                 p_mut=self.mutation_rate,
-                lambda_rate=self.metabolic_rate  # 🌟 税率を渡す
+                ast_costs=ast_costs_jax
             )
             
+            self.actions = np.array(new_actions)
+
             # 3. Routing Phase: 数学的難読化の適用 (モックロジックを維持)
             do_mutate_cpu = np.array(do_mutate)
             

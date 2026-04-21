@@ -2,7 +2,7 @@
 
 import argparse
 import asyncio
-from configs.default_config import get_default_config
+from cognition.default_config import get_default_config
 from core.simulator import EveSimulator
 
 def parse_args():
