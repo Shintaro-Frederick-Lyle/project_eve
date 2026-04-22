@@ -23,7 +23,7 @@ class EveMetricsLogger:
         payoffs_np = np.array(payoffs)
         
         avg_payoff = float(np.mean(payoffs_np))
-        coop_rate = 1.0 - float(np.mean(actions_np))
+        coop_rate = float(np.mean(actions_np))
         
         # 🌟 新しいメトリクスもCSVに書き込む
         with open(self.csv_path, 'a', newline='') as f:

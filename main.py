@@ -7,8 +7,9 @@ from core.simulator import EveSimulator
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Project Eve Simulation")
-    parser.add_argument("--lambda", dest="lam", type=float, default=0.0,
-                        help="代謝係数 λ (例: 0.0 / 0.001 / 0.01)")
+    parser.add_argument("--lambda", dest="lam", type=float, default=0.0)
+    # 🌟 誘惑係数 T を追加
+    parser.add_argument("--temp", dest="temp", type=float, default=1.5, help="誘惑係数 T (1.0 - 2.0)")
     parser.add_argument("--generations", type=int, default=3000)
     parser.add_argument("--grid-size",   type=int, default=64)
     return parser.parse_args()
@@ -21,8 +22,10 @@ async def main():
     # 🌟 フルスペック設定（64x64, 3000世代）を維持
     config["environment"]["grid_size"]  = args.grid_size
     config["environment"]["generations"] = args.generations
-    config["evolution"]["mutation_rate"] = 0.01
+    config["evolution"]["mutation_rate"] = 0.001
     config["evolution"]["metabolic_rate"] = args.lam
+    config["environment"]["physics"]["payoff_matrix"]["T (Temptation)"] = args.temp
+    config["environment"]["grid_size"]  = args.grid_size
 
     # 🌟 修正案に基づいたλ（代謝係数）の戦略的設定
     # Run A: 0.0    (基準群: 欺瞞的コード肥大化を誘発)

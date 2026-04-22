@@ -27,8 +27,8 @@ def save_all_snapshots(run_dir):
     visuals_dir = os.path.join(run_dir, "visuals")
     os.makedirs(visuals_dir, exist_ok=True)
 
-    # カラーマップ設定 (0: 青-協力, 1: 赤-裏切り)
-    cmap = ListedColormap(['#1f77b4', '#d62728'])
+    # 🌟 0(裏切り)を赤、1(協力)を青に割り当て
+    cmap = ListedColormap(['#d62728', '#1f77b4'])
 
     frames = []
     
