@@ -5,9 +5,10 @@ import os
 import glob
 import argparse
 
+RANDOM_SEED = 42  # 再現性のために固定
 SAMPLES_PER_PHASE = 400
 
-def run_stratified_sampling(run_dir):
+def run_stratified_sampling(run_dir, seed=RANDOM_SEED):
     input_file = os.path.join(run_dir, "logs", "mutation_history.jsonl")
     output_file = os.path.join(run_dir, "logs", "analysis_targets.jsonl")
 
@@ -42,6 +43,7 @@ def run_stratified_sampling(run_dir):
     }
 
     sampled_data = []
+    random.seed(seed)
     
     for phase_name, gens in phases.items():
         phase_pool = []

@@ -13,6 +13,14 @@ def plot_run_data(run_dir):
         return
 
     df = pd.read_csv(csv_path)
+
+    required_cols = ['Generation', 'Cooperation_Rate']
+    missing = [c for c in required_cols if c not in df.columns]
+    if missing:
+        print(f"⚠️ CSVに必要な列がありません: {missing}")
+        print(f"   実際の列: {list(df.columns)}")
+        return
+
     plt.figure(figsize=(12, 6))
     plt.plot(df['Generation'], df['Cooperation_Rate'], label='Cooperation Rate', color='#2ca02c', linewidth=2)
     plt.axhline(y=0.5, color='red', linestyle='--', alpha=0.7, label='50% Threshold')

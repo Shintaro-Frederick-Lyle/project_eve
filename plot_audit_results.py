@@ -5,6 +5,19 @@ import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 
+def clean_category(cat):
+    """LLMの出力表記ゆれやパース失敗(None)を完全に吸収する"""
+    # 追加：もし中身が空(None)や文字列以外だった場合は安全にOtherとして処理する
+    if not isinstance(cat, str):
+        return "Other"
+
+    cat = cat.replace('_', ' ').replace('[', '').replace(']', '').strip()
+    if "Noise" in cat and "Misattribution" in cat: return "Noise Misattribution"
+    if "Self" in cat and "Preservation" in cat: return "Self-Preservation"
+    if "Conformity" in cat: return "Conformity"
+    if "Refinement" in cat: return "Refinement"
+    return "Other"
+
 def plot_audit_data(run_dir):
     input_file = os.path.join(run_dir, "logs", "audit_results.jsonl")
     
@@ -13,59 +26,85 @@ def plot_audit_data(run_dir):
         return
 
     print(f"📂 ターゲットディレクトリ: {run_dir}")
-    print("📈 グラフを生成中...")
+    print("📈 進化のレジームシフト（割合）グラフを生成中...")
 
-    # JSONLを読み込んでPandasデータフレームに変換
     records = []
     with open(input_file, 'r', encoding='utf-8') as f:
+        skipped = 0
         for line in f:
-            data = json.loads(line)
-            records.append({
-                "generation": data.get("generation", 0),
-                "category": data.get("audit_category", "Unknown")
-            })
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                data = json.loads(line)
+                records.append({
+                    "generation": data.get("generation", 0),
+                    "category": data.get("audit_category", "Unknown")
+                })
+            except json.JSONDecodeError:
+                skipped += 1
+                continue
+
+        if skipped > 0:
+            print(f"⚠️ {skipped} 行のJSONパースに失敗しました（スキップ）。")
 
     df = pd.DataFrame(records)
-    
-    if df.empty:
-        print("❌ データが空です。")
-        return
+    if df.empty: return
 
-    # 世代ごと、カテゴリごとに件数を集計してピボットテーブルを作成
+    # 1. 世代・カテゴリごとに件数を集計
     pivot_df = df.groupby(['generation', 'category']).size().unstack(fill_value=0)
 
-    # グラフの描画設定
-    plt.figure(figsize=(12, 7))
-    
-    # カテゴリごとに色を指定（Noise Misattributionを赤系にして目立たせる）
+    # 2. 歯抜けの世代を0で埋める（0〜最大世代まで連続にする）
+    max_gen = df['generation'].max()
+    pivot_df = pivot_df.reindex(range(0, int(max_gen) + 1), fill_value=0)
+
+    # 3. 移動平均（Rolling）でノイズを強力に平滑化（窓サイズ: 100世代）
+    window_size = 100
+    smoothed_df = pivot_df.rolling(window=window_size, min_periods=1, center=True).mean()
+
+    # 4. 100%積み上げ（相対割合）に変換して全体の高さを100に固定する
+    row_sums = smoothed_df.sum(axis=1)
+    # 0除算を防ぐため、合計が0の箇所は1に置換（値は0%になる）
+    percentage_df = smoothed_df.div(row_sums.replace(0, 1), axis=0) * 100
+
+    # 色の固定（迷信を最も目立つ赤に）
     colors = {
-        "Noise Misattribution": "#d62728", # 迷信（赤：危険/エラー）
-        "Refinement": "#1f77b4",          # 洗練（青：論理的）
-        "Self-Preservation": "#ff7f0e",   # 自己保存（オレンジ）
-        "Conformity": "#2ca02c",          # 同調（緑）
+        "Noise Misattribution": "#d62728", 
+        "Refinement": "#1f77b4",          
+        "Self-Preservation": "#ff7f0e",   
+        "Conformity": "#2ca02c",          
         "Other": "#7f7f7f"
     }
     
-    # 存在する列だけを色付きで描画
-    plot_colors = [colors.get(col, "#7f7f7f") for col in pivot_df.columns]
+    # グラフの下から順に重ねるための並び順指定
+    ordered_cols = [c for c in ["Noise Misattribution", "Conformity", "Self-Preservation", "Refinement", "Other"] if c in percentage_df.columns]
+    percentage_df = percentage_df[ordered_cols]
+    plot_colors = [colors.get(col, "#7f7f7f") for col in percentage_df.columns]
     
-    pivot_df.plot.area(stacked=True, color=plot_colors, alpha=0.8, ax=plt.gca())
+    # グラフの描画
+    plt.figure(figsize=(12, 7))
+    percentage_df.plot.area(stacked=True, color=plot_colors, alpha=0.8, ax=plt.gca())
 
-    plt.title(f'Evolution of Agent Reasoning ({os.path.basename(run_dir)})', fontsize=14, fontweight='bold')
+    plt.title(f'Evolutionary Regime Shift of Agent Strategies ({os.path.basename(run_dir)})', fontsize=16, fontweight='bold')
     plt.xlabel('Generations', fontsize=12)
-    plt.ylabel('Number of Mutated Codes (Length > 80)', fontsize=12)
-    plt.legend(title='Audit Category', loc='upper left')
+    plt.ylabel('Proportion of Strategies (%)', fontsize=12) # Y軸は件数ではなく%に
+    
+    # グラフの見た目を美しく整える
+    plt.ylim(0, 100)
+    plt.xlim(0, max_gen)
+    plt.margins(x=0, y=0)
+    plt.legend(title='Audit Category', loc='upper right', bbox_to_anchor=(1.3, 1))
     plt.grid(True, linestyle=':', alpha=0.6)
 
-    # 保存
-    save_path = os.path.join(run_dir, "audit_transition.png")
+    # 保存（ファイル名を percentage_transition.png に変更）
+    save_path = os.path.join(run_dir, "percentage_transition.png")
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"📊 グラフを自動生成しました: {save_path}")
+    print(f"📊 相対割合グラフを生成しました: {save_path}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="査読結果のカテゴリ推移をグラフ化します。")
-    parser.add_argument("--run_dir", type=str, help="対象の実行ディレクトリ（省略時は最新のものを自動選択）")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--run_dir", type=str, help="対象の実行ディレクトリ（省略時は最新）")
     args = parser.parse_args()
 
     target_dir = args.run_dir

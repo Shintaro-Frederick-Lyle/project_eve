@@ -35,8 +35,13 @@ def audit_log(reasoning):
 
     try:
         response = requests.post(OLLAMA_URL, json=payload, timeout=60)
+        response.raise_for_status()  # 4xx/5xx で HTTPError を送出
         res_data = response.json()
         return json.loads(res_data['response'])
+    except requests.exceptions.HTTPError as e:
+        return {"reason": f"HTTP Error: {e.response.status_code}", "category": "Error"}
+    except requests.exceptions.Timeout:
+        return {"reason": "Timeout: Ollama応答なし", "category": "Error"}
     except Exception as e:
         return {"reason": f"Error: {str(e)}", "category": "Error"}
 

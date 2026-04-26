@@ -25,7 +25,6 @@ async def main():
     config["evolution"]["mutation_rate"] = 0.001
     config["evolution"]["metabolic_rate"] = args.lam
     config["environment"]["physics"]["payoff_matrix"]["T (Temptation)"] = args.temp
-    config["environment"]["grid_size"]  = args.grid_size
 
     # 🌟 修正案に基づいたλ（代謝係数）の戦略的設定
     # Run A: 0.0    (基準群: 欺瞞的コード肥大化を誘発)
